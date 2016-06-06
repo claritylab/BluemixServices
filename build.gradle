@@ -1,0 +1,60 @@
+group 'de.rwthaachen.ensemble'
+version '0.01'
+
+apply {
+    plugin 'java'
+    plugin 'idea'
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+    }
+}
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'lib'
+    }
+}
+
+task(runThriftBackend, type: JavaExec) { //dependsOn: 'classes',
+    main = 'de.rwthaachen.ensemble.Main'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+task(runRestBackend, type: JavaExec) { //dependsOn: 'classes',
+    main = 'de.rwthaachen.ensemble.Main'
+    classpath = sourceSets.main.runtimeClasspath
+    args = ["REST"]
+}
+
+//defaultTasks 'runRestBackend'
+
+dependencies {
+    compile group: 'org.glassfish.jersey.core',       name: 'jersey-server',                 version: '2.7'
+    compile group: 'org.glassfish.jersey.containers', name: 'jersey-container-servlet-core', version: '2.7'
+    compile group: 'org.glassfish.jersey.containers', name: 'jersey-container-jetty-http',   version: '2.7'
+    compile group: 'org.glassfish.jersey.media',      name: 'jersey-media-moxy',             version: '2.7'
+
+    compile group: 'javax.ws.rs',                     name: 'javax.ws.rs-api',               version: '2.0.1'
+    compile group: 'org.eclipse.jetty.aggregate',     name: 'jetty-all',                     version: '9.3.6.v20151106'
+
+    compile group: 'commons-beanutils',               name: 'commons-beanutils',             version: '1.9.2'
+    compile group: 'commons-collections',             name: 'commons-collections',           version: '3.2.2'
+    compile group: 'commons-lang',                    name: 'commons-lang',                  version: '2.6'
+    compile group: 'commons-logging',                 name: 'commons-logging',               version: '1.2'
+    compile group: 'net.sf.ezmorph',                  name: 'ezmorph',                       version: '1.0.6'
+    compile group: 'net.sf.json-lib',                 name: 'json-lib',                      version: '2.4', classifier: 'jdk15'
+    compile group: 'org.apache.pig',                  name: 'pig',                           version: '0.10.0' //updatable
+    compile group: 'org.apache.uima',                 name: 'uimaj-core',                    version: '2.4.2' //updatable
+
+    compile group: 'org.apache.httpcomponents',       name: 'fluent-hc',                     version: '4.4.1'
+
+    // TODO: Currently, both gson and minimal-json are used - this should be consolidated in the near future
+    // gson comes from YodaQA, minimal json was chosen for its minimalism
+    // Jackson is another promising candidate, but heavyweight
+    compile group: 'com.eclipsesource.minimal-json',  name: 'minimal-json',                  version: '0.9.4'
+    compile group: 'com.google.code.gson',            name: 'gson',                          version: '2.6.2'
+}

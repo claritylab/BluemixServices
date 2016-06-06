@@ -1,0 +1,5 @@
+bluemixservices:
+  image: bluemixservices
+  ports:
+   - "9093:9093"
+  command: ./gradlew runRestBackend

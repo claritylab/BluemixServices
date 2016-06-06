@@ -1,0 +1,101 @@
+dbpedia:
+  image: fuseki
+  ports:
+   - "3037:3037"
+  volumes:
+   - /media/fp/DataBackends/data/db/:/jena-fuseki-1.1.1/db/
+  command: ./fuseki-server --port 3037 --loc db /dbpedia
+
+enwiki:
+  image: solr
+  ports:
+   - "8983:8983"
+  volumes:
+   - /media/fp/DataBackends/data/enwiki/collection1/:/solr-4.6.0/example/enwiki/collection1/
+  command: java -Dsolr.solr.home=enwiki -jar start.jar
+
+freebase:
+  image: fuseki
+  ports:
+   - "3030:3030"
+  volumes:
+   - /media/fp/DataBackends/data/d-freebase/:/jena-fuseki-1.1.1/d-freebase/
+  command: ./fuseki-server --loc d-freebase /freebase
+
+label1:
+  image: labels
+  ports:
+   - "5000:5000"
+  volumes:
+   - /media/fp/DataBackends/data/labels/:/shared
+  command: pypy /label-lookup/lookup-service.py /shared/sorted_list.dat
+
+label2:
+  image: labels
+  ports:
+   - "5001:5001"
+  volumes:
+   - /media/fp/DataBackends/data/labels/:/shared
+  command: pypy /label-lookup/lookup-service-sqlite.py /shared/labels.db
+  
+webqa:
+  image: webqa
+  ports:
+   - "4000:4000"
+  volumes:
+   - /media/fp/DataBackends/00keys/webqa:/qaservice/conf
+  command: ./gradlew runRestBackend
+
+yoda_offline:
+  image: yoda_offline_tested
+  links:
+   - enwiki:enwiki
+   - dbpedia:dbpedia
+   - freebase:freebase
+   - label1:label1
+   - label2:label2
+  ports:
+   - "4567:4567"
+  command: ./gradlew web -q -Dcz.brmlab.yodaqa.dbpediaurl="http://dbpedia:3037/dbpedia/query" -Dcz.brmlab.yodaqa.freebaseurl="http://freebase:3030/freebase/query" -Dcz.brmlab.yodaqa.solrurl="http://enwiki:8983/solr" -Dcz.brmlab.yodaqa.label1url="http://label1:5000" -Dcz.brmlab.yodaqa.label2url="http://label2:5001"
+
+ensemble:
+  image: ensemble
+  links:
+   - yoda_offline:yoda_offline
+   - webqa:webqa
+  ports:
+   - "9090:9090"
+   - "9091:9091"
+  command: ./gradlew runThriftBackend -Dde.rwthaachen.ensemble.webqaurl="http://webqa:4000" -Dde.rwthaachen.ensemble.webqaurl="http://yoda_offline:4567"
+
+mariadb-jbt:
+  image: mariadb
+  environment:
+   - MYSQL_ROOT_PASSWORD=""
+  ports:
+   - "3306:3306"
+  volumes:
+   - /media/fp/DataBackends/data/varlibmysql:/var/lib/mysql
+  command: mysqld --skip-innodb --default-storage-engine=myisam -uroot
+
+dsemantics:
+  image: dsemantics
+  links:
+   - mariadb-jbt:mariadb-jbt
+  ports:
+   - "9092:9092"
+  command: ./gradlew runRestBackend
+
+wordembeddings:
+  image: wordembeddings
+  ports:
+   - "4123:4123"
+  volumes:
+   - /media/fp/DataBackends/data/wordembeddingsmodel:/wordemb/model
+  command: python3 ./WordEmbeddingsBackend.py
+
+keyphraserake:
+  image: keyphraserake
+  ports:
+   - "4124:4124"
+  command: python3 ./KeyphraseBackendRake.py
